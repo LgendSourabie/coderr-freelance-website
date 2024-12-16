@@ -42,6 +42,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     """
     repeated_password = serializers.CharField(write_only = True)
+    type = serializers.ChoiceField(choices=Profile.PROFILE_TYPE_OPTIONS)
    
     class Meta:
         model = User
@@ -84,6 +85,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         first_name = self.validated_data.pop('first_name', '')
         last_name = self.validated_data.pop('last_name', '')
         user_name = self.validated_data.pop('username','')
+        type = self.validated_data.pop('type')
 
         if not user_name:
             user_name = self.validated_data['email']
@@ -96,5 +98,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         )
         user.set_password(self.validated_data['password'])
         user.save()
+        Profile.objects.create(user=user, type=type)
         return user
     

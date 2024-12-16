@@ -1,9 +1,10 @@
 from rest_framework import generics
-from coderr_user_profile_app.models import Profile,BusinessProfile
+from coderr_user_profile_app.models import Profile
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from coderr_user_profile_app.api.serializers import ProfileSerializer, BusinessProfileSerializer
+from django.shortcuts import get_object_or_404
+from coderr_user_profile_app.api.serializers import ProfileSerializer
 from coderr_user_profile_app.api.permissions import IsOwnerOrAdmin
 
 
@@ -22,7 +23,7 @@ class CustomerProfileList(generics.ListAPIView):
 
 class BusinessProfileList(generics.ListAPIView):
 
-    serializer_class = BusinessProfileSerializer
+    serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
 
@@ -40,16 +41,16 @@ class ProfileDetail(generics.RetrieveUpdateAPIView):
     permission_classes = [IsOwnerOrAdmin]
 
 
-    def get_profile_or_404(self, pk):
-        try:
-            profile = Profile.objects.get(pk = pk)
-            return profile
-        except Profile.DoesNotExist:
-            return Response({'error_message':'Profil nicht gefunden'}, status=status.HTTP_404_NOT_FOUND)
+    # def get_profile_or_404(self, pk):
+        # try:
+        #     profile = Profile.objects.get(pk = pk)
+        #     return profile
+        # except Profile.DoesNotExist:
+        #     return Response({'error_message':'Profil nicht gefunden'}, status=status.HTTP_404_NOT_FOUND)
 
 
     def get(self, request, pk):
-        profile = self.get_profile_or_404(pk)
+        profile = get_object_or_404(Profile,pk)
 
         serializer = ProfileSerializer(data=profile)
      
@@ -80,7 +81,7 @@ class ProfileDetail(generics.RetrieveUpdateAPIView):
         
         serializer = ProfileSerializer(data = request.data)
         if profile.type == 'business':
-            serializer = BusinessProfileSerializer
+            serializer = ProfileSerializer
 
         if serializer.is_valid():
             serializer.save()

@@ -9,7 +9,7 @@ from rest_framework import status
 from coderr_auth_app.api.serializers import LoginSerializer, RegistrationSerializer
 
 
-class LoginView(ObtainAuthToken):
+class Login(ObtainAuthToken):
     """Users can log in using their username and password
     
     Keyword arguments:
@@ -37,7 +37,7 @@ class LoginView(ObtainAuthToken):
             return Response(user_data, status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-class GuestLoginView(APIView):
+class GuestLogin(APIView):
     pass
 
 

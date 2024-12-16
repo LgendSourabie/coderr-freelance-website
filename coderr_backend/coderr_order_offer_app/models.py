@@ -20,9 +20,12 @@ class OfferDetail(models.Model):
     title = models.CharField(max_length=50)
     revisions = models.SmallIntegerField(default=-1)
     delivery_time_in_days = models.SmallIntegerField()
-    price = models.DecimalField(decimal_places=2)
+    price = models.DecimalField(max_digits=10,decimal_places=2)
     features = models.JSONField()
     offer_type = models.CharField(max_length=8,choices=OFFER_TYPE_OPTIONS,default='basic', blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.title} {self.price}"
 
 
 class Offer(models.Model):
@@ -45,12 +48,24 @@ class Offer(models.Model):
     created_at= models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    details = models.JSONField()
+    details = models.ManyToManyField(OfferDetail, related_name='offer')
+    min_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
+    def __str__(self):
+        return f"{self.title} {self.min_price}"
+    
+    def delete(self, *args, **kwargs):
+        self.details.all().delete()
+        return super().delete(*args, **kwargs)
 
+    
 class Order(models.Model):
     """
     Order of customers
     """
     
-    offer_detail_id = models.ForeignKey(OfferDetail, on_delete=models.CASCADE)
+    offer_detail = models.ForeignKey(OfferDetail, on_delete=models.CASCADE)
+    customer_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=15,choices=ORDER_STATUS_OPTIONS, default="in_progress") 

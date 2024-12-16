@@ -24,7 +24,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('api/', include('coderr_user_profile_app.api.urls')),
     path('api/', include('coderr_order_offer_app.api.urls')),
-    path('api/', include('coderr_basic_info_app.api.urls')),
+    path('api/', include('coderr_basic_infos_app.api.urls')),
     path('api/', include('coderr_auth_app.api.urls')),
 
 ]
