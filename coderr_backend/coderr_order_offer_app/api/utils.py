@@ -16,10 +16,16 @@ def is_order_for_business_user(order, user):
     return order.offer_detail.offer.first().user.id == user.pk
 
 
-def get_model_or_exception(model, pk):
+def get_model_or_exception(model, pk:int,flag:str):
 
     try:
-        business_user = model.objects.get(pk=pk)
+        found_model = model.objects.get(pk=pk)
     except model.DoesNotExist:
-        raise Http404({"error": "Business user not found."})  
-    return business_user
+        raise Http404({"error": f"{flag} not found."}) 
+    else:
+        #check if the user searched is a business user
+        if flag.lower() != 'user':
+            # verify if the user found is a business user 
+            if found_model.profile.type != 'business':
+                raise Http404({"error": f"{flag} not found."}) 
+    return found_model

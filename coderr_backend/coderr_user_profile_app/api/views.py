@@ -1,36 +1,45 @@
 from rest_framework import generics
 from coderr_user_profile_app.models import Profile
+from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.shortcuts import get_object_or_404
-from coderr_user_profile_app.api.serializers import ProfileSerializer
+from coderr_order_offer_app.api.utils import get_model_or_exception
+from coderr_user_profile_app.api.serializers import ProfileSerializer, BusinessAndCustomerProfileSerializer
 from coderr_user_profile_app.api.permissions import IsOwnerOrAdmin
-
 
 
 class CustomerProfileList(generics.ListAPIView):
 
-    serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
+    serializer_class = BusinessAndCustomerProfileSerializer
     permission_classes = [IsAuthenticated]
 
 
-    def get_queryset(self):
+    def get(self, request, *args, **kwargs):
         customer = Profile.PROFILE_TYPE_OPTIONS[1][1]
         customer_profiles = Profile.objects.filter(type=customer)
-        return Response(customer_profiles, status=status.HTTP_200_OK)
+
+        serializer = self.get_serializer(customer_profiles, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)   
+    
+
     
 
 class BusinessProfileList(generics.ListAPIView):
 
-    serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
+    serializer_class = BusinessAndCustomerProfileSerializer
     permission_classes = [IsAuthenticated]
 
-
-    def get_queryset(self):
+    def get(self, request, *args, **kwargs):
         business = Profile.PROFILE_TYPE_OPTIONS[0][0]
         business_profiles = Profile.objects.filter(type=business)
-        return Response(business_profiles, status=status.HTTP_200_OK)
+
+        serializer = self.get_serializer(business_profiles, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)  
     
     
 
@@ -41,39 +50,14 @@ class ProfileDetail(generics.RetrieveUpdateAPIView):
     permission_classes = [IsOwnerOrAdmin]
 
 
-    # def get_profile_or_404(self, pk):
-        # try:
-        #     profile = Profile.objects.get(pk = pk)
-        #     return profile
-        # except Profile.DoesNotExist:
-        #     return Response({'error_message':'Profil nicht gefunden'}, status=status.HTTP_404_NOT_FOUND)
-
-
     def get(self, request, pk):
-        profile = get_object_or_404(Profile,pk)
+        user = get_model_or_exception(User,pk, 'User')
 
-        serializer = ProfileSerializer(data=profile)
-     
-        data ={
-                "user": profile.user.id,
-                "username": profile.user.username,
-                "first_name": profile.user.first_name,
-                "last_name":profile.user.last_name,
-                "file":profile.file.name if profile.file.name else 'null',
-                "type": profile.type,
-                "email": profile.user.email,
-                "created_at": profile.created_at
-                }   
-        
-        if profile.type == 'business':
-            data.update( {
-                    "location": profile.location,
-                    "tel":profile.tel,
-                    "description": profile.description,
-                    "working_hours": profile.working_hours
-                    })
+        profile = user.profile
 
-        return Response(data, status=status.HTTP_200_OK)
+        serializer = ProfileSerializer(profile)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
     def patch(self, request, pk):
@@ -85,6 +69,4 @@ class ProfileDetail(generics.RetrieveUpdateAPIView):
 
         if serializer.is_valid():
             serializer.save()
-
-        
 

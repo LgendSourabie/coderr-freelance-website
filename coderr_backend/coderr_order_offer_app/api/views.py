@@ -8,13 +8,18 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from coderr_order_offer_app.api.utils import is_order_for_business_user, is_order_in_progress,\
                                                 get_model_or_exception
-
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 
 class OfferList(generics.ListCreateAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
+    filter_backends = [DjangoFilterBackend,filters.SearchFilter,filters.OrderingFilter]
+    ordering_fields=['min_price','updated_at']
+    search_fields = ['title']
+    filterset_fields=['min_price']
 
 
 class SingleOffer(generics.RetrieveUpdateDestroyAPIView):
@@ -44,11 +49,8 @@ class OrderCount(generics.RetrieveAPIView):
     def get(self, request, pk):
 
         business_user_orders_in_progress = []
-        # try:
-        #     business_user = User.objects.get(pk=pk)
-        # except User.DoesNotExist:
-        #     raise Http404({"error": "Business user not found."})
-        business_user = get_model_or_exception(User, pk)
+
+        business_user = get_model_or_exception(User, pk,'Business user')
 
         for order in Order.objects.all():
             if is_order_for_business_user(order, business_user) and is_order_in_progress(order):
@@ -66,12 +68,8 @@ class CompletedOrderCount(generics.RetrieveAPIView):
     def get(self, request, pk):
 
         business_user_orders_completed = []
-        # try:
-        #     business_user = User.objects.get(pk=pk)
-        # except User.DoesNotExist:
-        #     raise Http404({"error": "Business user not found."})
 
-        business_user = get_model_or_exception(User, pk)
+        business_user = get_model_or_exception(User, pk,'Business user')
 
         for order in Order.objects.all():
             if is_order_for_business_user(order, business_user) and not is_order_in_progress(order):

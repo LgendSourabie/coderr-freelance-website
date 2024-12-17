@@ -42,15 +42,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'django_filters',
     'rest_framework.authtoken',
     'coderr_order_offer_app',
     'coderr_basic_infos_app',
+    'coderr_file_upload_app',
     'coderr_user_profile_app',
     'coderr_auth_app',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,6 +63,14 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'coderr_project.urls'
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'content-type',
+]
 
 TEMPLATES = [
     {
@@ -139,5 +150,23 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    ]
+    ],
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2,
+
+     'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+    ],
+        'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+],
+    'DEFAULT_THROTTLE_RATES':{
+        'anon':'10/minute',
+        'user':'20/minute',
+        'twenty':'20/second',
+    },
 }

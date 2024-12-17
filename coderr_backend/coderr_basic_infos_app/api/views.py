@@ -4,7 +4,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from coderr_basic_infos_app.models import Rating
 from coderr_basic_infos_app.api.serializers import RatingSerializer
-
+from coderr_basic_infos_app.api.utils import calculate_average_rating
 
 
 
@@ -13,14 +13,15 @@ class BaseInfoList(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
 
-
-        number_offer = len(Offer.objects.all())
+        business = Profile.PROFILE_TYPE_OPTIONS[0][0]
+        ratings = Rating.objects.all().values_list('rating', flat=True)
+        rating_list = list(ratings)
 
         data = {
-                "review_count": 10,
-                "average_rating": 4.6,
-                "business_profile_count": 45,
-                "offer_count": number_offer,
+                "review_count": len(Rating.objects.all()),
+                "average_rating": calculate_average_rating(rating_list),
+                "business_profile_count": len(Profile.objects.filter(type=business)),
+                "offer_count": len(Offer.objects.all()),
               }
         return Response(data, status=status.HTTP_200_OK)
     
@@ -29,6 +30,10 @@ class BaseInfoList(generics.ListAPIView):
 class ReviewsList(generics.ListCreateAPIView):
     queryset = Rating.objects.all()
     serializer_class = RatingSerializer
+
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            serializer.save(reviewer = self.request.user)
 
 class ReviewsDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Rating.objects.all()
