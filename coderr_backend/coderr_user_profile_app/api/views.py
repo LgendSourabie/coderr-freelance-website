@@ -51,22 +51,26 @@ class ProfileDetail(generics.RetrieveUpdateAPIView):
 
 
     def get(self, request, pk):
-        user = get_model_or_exception(User,pk, 'User')
+        profile = get_model_or_exception(Profile,pk, 'Kein Profil gefunden.')
 
-        profile = user.profile
+        # profile = user.profile
 
         serializer = ProfileSerializer(profile)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    def get_serializer_context(self):
+        return {'request': self.request}
+    
 
     def patch(self, request, pk):
-        profile = self.get_profile_or_404(pk)
+        profile = get_model_or_exception(Profile,pk, "Kein Profil gefunden.")
         
-        serializer = ProfileSerializer(data = request.data)
-        if profile.type == 'business':
-            serializer = ProfileSerializer
+        serializer = ProfileSerializer(profile, data = request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
             serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    

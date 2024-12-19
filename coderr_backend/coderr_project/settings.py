@@ -152,9 +152,6 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ],
 
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 2,
-
      'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
@@ -166,7 +163,7 @@ REST_FRAMEWORK = {
 ],
     'DEFAULT_THROTTLE_RATES':{
         'anon':'10/minute',
-        'user':'20/minute',
-        'twenty':'20/second',
+        'user':'200/minute',
+        'twenty':'200/second',
     },
 }

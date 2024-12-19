@@ -12,7 +12,7 @@ class Profile(models.Model):
         - type: type of profile - is either customer or business
     """
     PROFILE_TYPE_OPTIONS = (('business','business'),('customer','customer'))
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     created_at = models.DateTimeField(auto_now_add=True)
     # file = models.FileField(upload_to='/', blank=True, null=True)
     # uploaded_at = models.DateTimeField(blank=True, null=True)

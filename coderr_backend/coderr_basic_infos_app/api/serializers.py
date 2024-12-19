@@ -9,7 +9,6 @@ from coderr_order_offer_app.api.utils import get_model_or_exception
 
 class RatingSerializer(serializers.ModelSerializer):
      
-    business_user = serializers.IntegerField()
     rating = serializers.IntegerField()
     description =serializers.CharField(max_length=300, allow_blank = True)
 
@@ -27,10 +26,11 @@ class RatingSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         print(validated_data)
-        business_user_id = validated_data['business_user']
+       
+        business_user_id = validated_data['business_user'].id
 
         # Check Business user if it there is any user with provided ID
-        business_user = get_model_or_exception(User, business_user_id,'Business user')
+        business_user = get_model_or_exception(Profile, business_user_id,'Geschäftsnutzer nicht gefunden.')
 
         # Validate if the reviewer is actually a customer user
         customer = Profile.PROFILE_TYPE_OPTIONS[1][1]
@@ -38,7 +38,7 @@ class RatingSerializer(serializers.ModelSerializer):
 
         if self.context['request'].user.profile.type != customer:
             raise serializers.ValidationError({"error": "Nur Kundennutzer dürfen eine Bewertung durchführen"})
-        if business_user.profile.type != business:
+        if business_user.type != business:
             raise serializers.ValidationError({"error": "Nur Geschäftsnutzer können bewertet werden"})
         return super().create(validated_data)
         

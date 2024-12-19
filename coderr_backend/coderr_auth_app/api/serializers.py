@@ -38,7 +38,7 @@ class LoginSerializer(serializers.Serializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """"
-    User registration serializer allowing user to enter username. 
+    User registration serializer allowing to save clean data into DB. 
 
     """
     repeated_password = serializers.CharField(write_only = True)
@@ -98,6 +98,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         )
         user.set_password(self.validated_data['password'])
         user.save()
-        Profile.objects.create(user=user, type=type)
+        Profile.objects.create(pk=user.pk ,user=user, type=type)
         return user
     

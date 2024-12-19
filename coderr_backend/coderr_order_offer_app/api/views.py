@@ -1,56 +1,106 @@
-from django.http import Http404
 from coderr_order_offer_app.models import OfferDetail, Offer, Order
 from .serializers import OfferDetailSerializer, OfferSerializer, OrderSerializer, OrderCountSerializer
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAdminUser
 from django.contrib.auth.models import User
 from coderr_order_offer_app.api.utils import is_order_for_business_user, is_order_in_progress,\
                                                 get_model_or_exception
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
-
-
+from coderr_order_offer_app.api.filters import OfferFilter
+from coderr_order_offer_app.api.paginations import OfferPagination
+from coderr_user_profile_app.models import Profile
+from coderr_order_offer_app.api.permissions import IsBusinessAndAuthenticated, IsAuthorized
 
 class OfferList(generics.ListCreateAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
+    permission_classes = [IsBusinessAndAuthenticated]
     filter_backends = [DjangoFilterBackend,filters.SearchFilter,filters.OrderingFilter]
+    filterset_class = OfferFilter
+    pagination_class = OfferPagination
     ordering_fields=['min_price','updated_at']
-    search_fields = ['title']
-    filterset_fields=['min_price']
+    search_fields = ['title','description']
+
+
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            serializer.save(user = self.request.user.profile)
+
+    def create(self, request, *args, **kwargs):
+
+        business = Profile.PROFILE_TYPE_OPTIONS[0][0]
+
+        if self.request.user.profile.type != business:
+            return Response({"error":"Nur Geschäftsnutzer können Angebote erstellen."}, status=status.HTTP_400_BAD_REQUEST)
+        return super().create(request, *args, **kwargs)
+    
 
 
 class SingleOffer(generics.RetrieveUpdateDestroyAPIView):
     queryset = Offer.objects.all()
     serializer_class = OfferSerializer
+    permission_classes = [IsBusinessAndAuthenticated]
+
 
 class SingleOfferDetail(generics.RetrieveAPIView):
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer   
+    permission_classes = [IsBusinessAndAuthenticated]
+
 
 
 class OrderList(generics.ListCreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [IsAuthorized]
+    
+
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            offer_detail_id = serializer.validated_data.get('offer_detail_id')
+            offer_detail = get_model_or_exception(OfferDetail, offer_detail_id, "Angebot nicht gefunden.")
+            business_user = offer_detail.offer.first().user
+            serializer.save(customer_user = self.request.user.profile, business_user = business_user)
+
+
+    def list(self, request, *args, **kwargs):
+
+        if request.user.is_superuser:
+            data = Order.objects.all()
+        else:
+            data = Order.objects.filter(business_user = request.user.profile)
+        serializer = OrderSerializer(data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # def get(self, request, *args, **kwargs):
+
+    #     register_user_orders = []
+
+    #     all_orders = Order.objects.all()
+
+    #     for order in all_orders:
+    #         if order.offer_detail.offer.first().user.profile in ['customer', 'business']:
+    #             register_user_orders.append(order)
+    #     return Response(register_user_orders, status=status.HTTP_200_OK) 
 
 class SingleOrder(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [AllowAny]
-
+    permission_classes = [IsAuthorized]
 
 
 class OrderCount(generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderCountSerializer
+    permission_classes = [AllowAny]
 
     def get(self, request, pk):
 
         business_user_orders_in_progress = []
 
-        business_user = get_model_or_exception(User, pk,'Business user')
+        business_user = get_model_or_exception(Profile, pk,'Geschäftsnutzer nicht gefunden.')
 
         for order in Order.objects.all():
             if is_order_for_business_user(order, business_user) and is_order_in_progress(order):
@@ -69,7 +119,7 @@ class CompletedOrderCount(generics.RetrieveAPIView):
 
         business_user_orders_completed = []
 
-        business_user = get_model_or_exception(User, pk,'Business user')
+        business_user = get_model_or_exception(User, pk,'Geschäftsnutzer nicht gefunden')
 
         for order in Order.objects.all():
             if is_order_for_business_user(order, business_user) and not is_order_in_progress(order):

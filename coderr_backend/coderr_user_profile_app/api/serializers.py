@@ -6,7 +6,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username','first_name','last_name']
+        fields = ['pk', 'username','first_name','last_name']
 
 
 class BusinessAndCustomerProfileSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class BusinessAndCustomerProfileSerializer(serializers.ModelSerializer):
             current_representation['file'] = 'null'
             upload_date = 'null'
         else:
-            current_representation['file'] = uploaded_data_value_json['file']
+            current_representation['file'] =  f"media/{uploaded_data_value_json['file']}"
             upload_date = uploaded_data_value_json['uploaded_at']
 
 
@@ -44,12 +44,32 @@ class BusinessAndCustomerProfileSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
 
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    file = FileUploadSerializer(read_only =True)
+
     class Meta:
         model = Profile
-        fields = ['user','location','tel','description','working_hours', 'type', 'created_at']
+        fields = ['user','file','location','tel','description','working_hours', 'type', 'created_at']
+        read_only_fields = ['user', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+      
 
     def to_representation(self, instance):
         current_representation = super().to_representation(instance)
+        
+        try:
+            uploaded_data_value_json = list(instance.fileupload_set.values()).pop()
+        except IndexError:
+            current_representation['file'] = 'null'
+            upload_date = 'null'
+        else:
+            current_representation['file'] = f"media/{uploaded_data_value_json['file']}"
+            upload_date = uploaded_data_value_json['uploaded_at']
+
+
         current_representation['username'] = instance.user.username
         current_representation['first_name'] = instance.user.first_name
         current_representation['last_name'] = instance.user.last_name
@@ -57,6 +77,14 @@ class ProfileSerializer(serializers.ModelSerializer):
         current_representation['username'] = instance.user.username
 
         return current_representation
+    
+  
+    def update(self, instance, validated_data):
+        validated_data.pop('user', None)
+        return super().update(instance, validated_data)
+    
+    
+
 
 
 

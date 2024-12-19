@@ -5,6 +5,11 @@ from rest_framework.response import Response
 from coderr_basic_infos_app.models import Rating
 from coderr_basic_infos_app.api.serializers import RatingSerializer
 from coderr_basic_infos_app.api.utils import calculate_average_rating
+from coderr_basic_infos_app.api.filters import RatingFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from rest_framework.permissions import IsAuthenticated
+from coderr_basic_infos_app.api.permissions import IsCustomerAndAuthenticated
 
 
 
@@ -30,13 +35,20 @@ class BaseInfoList(generics.ListAPIView):
 class ReviewsList(generics.ListCreateAPIView):
     queryset = Rating.objects.all()
     serializer_class = RatingSerializer
+    permission_classes = [IsCustomerAndAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = RatingFilter
+    ordering_fields = ['updated_at','rating']
+
 
     def perform_create(self, serializer):
         if serializer.is_valid():
-            serializer.save(reviewer = self.request.user)
+            serializer.save(reviewer = self.request.user.profile)
+
 
 class ReviewsDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Rating.objects.all()
+    permission_classes = IsCustomerAndAuthenticated
     serializer_class = RatingSerializer
     
 

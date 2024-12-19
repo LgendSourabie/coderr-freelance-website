@@ -1,15 +1,27 @@
 from rest_framework import serializers
 from coderr_order_offer_app.models import Offer, OfferDetail, Order
 from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 from coderr_order_offer_app.api.utils import *
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """Serialize for further for nested usage in offer """
+
+    first_name = serializers.SerializerMethodField()
+    last_name =  serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
     class Meta:
-        model = User
+        model = Profile
         fields = ['first_name','last_name','username']
+
+    def get_first_name(self,profile:Profile):
+        return profile.user.first_name
+
+    def get_last_name(self,profile:Profile):
+        return profile.user.last_name
+
+    def get_username(self,profile:Profile):
+        return profile.user.username
 class OfferDetailSerializer(serializers.ModelSerializer):
         
     class   Meta:
@@ -41,40 +53,36 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 
 
 class OfferSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(
-        queryset = User.objects.all(),
-        default = serializers.CurrentUserDefault()
-    )
+    # user = serializers.PrimaryKeyRelatedField(
+    #     queryset = User.objects.all()
+    # )
     user_details = UserDetailSerializer(source='user',read_only=True)
     details =  serializers.ListField(child=serializers.DictField(), write_only = True, required = True)
     min_price = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, read_only=True)
+    min_delivery_time = serializers.IntegerField(required=False, read_only=True)
 
     class Meta:
         model = Offer
-        fields = ['id','user', 'title', 'image', 'description','created_at','updated_at','details', "min_price",'user_details']
+        fields = ['id','user', 'title', 'image', 'description','created_at','updated_at','details', "min_price",'min_delivery_time','user_details']
         read_only_fields = ['created_at','updated_at']
-        depth = 1
 
     def to_representation(self, instance):
         """Handle the read operation for detail since previously defined as write field."""
+
+        request = self.context.get('request')
 
         data = super().to_representation(instance)
         detail_output = [
             {"id": detail_data.id, "url":f"/offerdetails/{detail_data.id}/"} for detail_data in instance.details.all()
         ]
         data['details'] = detail_output
-        # data['details'] = OfferDetailSerializer(instance.details.all(), many=True).data
+
+        # Check if single offer query to customize output
+        if request:
+            if str(instance.id) in request.path:
+                data['details'] = OfferDetailSerializer(instance.details.all(), many=True).data
+        
         return data
-    
-
-    def get_min_price(self, details):
-        all_detail_price = [price['price'] for price in details]
-
-        return min(all_detail_price)
-
-
-    def get_min_delivery_time(self):
-        pass
 
 
     def validate(self, attrs):
@@ -87,15 +95,18 @@ class OfferSerializer(serializers.ModelSerializer):
             return serializers.ValidationError("Angebot muss genau drei Pakete enthalten")
         
         if set(offer_details) != SET_OFFER_TYPE:
-            return serializers.ValidationError("Ungültige eingabe")
-        
+            return serializers.ValidationError("Ungültige eingabe")  
         return attrs
     
     def create(self, validated_data):
 
+        print(type(validated_data))
         offer_details_data = validated_data.pop('details', [])
-        min_price = self.get_min_price(offer_details_data)
+        min_price = get_min_price(offer_details_data)
+        min_delivery_time = get_min_delivery_time(offer_details_data)
+
         validated_data['min_price'] = min_price
+        validated_data['min_delivery_time'] = min_delivery_time
 
         # create offer
         offer = Offer.objects.create(**validated_data)
@@ -144,20 +155,14 @@ class OfferSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     """Check data for consistency before saving them to the DB"""
-    
-    customer_user = serializers.PrimaryKeyRelatedField(
-        queryset = User.objects.all(),
-        default = serializers.CurrentUserDefault()
-             )
 
     offer_detail = OfferDetailSerializer(read_only = True)
     offer_detail_id = serializers.IntegerField(write_only = True)
-    business_user = serializers.SerializerMethodField(method_name='get_business_user')
 
     class Meta:
         model = Order
         fields = ['id','customer_user','business_user','offer_detail','offer_detail_id','status','created_at','updated_at']
-
+        read_only_fields = ['customer_user','business_user','created_at','updated_at']
 
     def to_representation(self, instance):
         """Change the representation of data to meet frontend expectation"""
@@ -174,7 +179,7 @@ class OrderSerializer(serializers.ModelSerializer):
         old_data_representation.pop('offer_detail')
 
         return old_data_representation
-
+    
 
     def validate_offer_detail_id(self, id):
         "Check if there is any offer detail for provided ID"
