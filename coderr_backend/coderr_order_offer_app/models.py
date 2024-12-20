@@ -26,7 +26,7 @@ class OfferDetail(models.Model):
     offer_type = models.CharField(max_length=8,choices=OFFER_TYPE_OPTIONS,default='basic', blank=True, null=True)
 
     def __str__(self):
-        return f"{self.title} {self.price}"
+        return f"Detail: {self.title} {self.price}"
 
 
 class Offer(models.Model):
@@ -54,7 +54,7 @@ class Offer(models.Model):
     min_delivery_time = models.SmallIntegerField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.title} {self.min_price}"
+        return f"Offer: {self.title} at minimum price of {self.min_price}$"
     
     def delete(self, *args, **kwargs):
         self.details.all().delete()
@@ -72,3 +72,8 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=15,choices=ORDER_STATUS_OPTIONS, default="in_progress") 
+
+    def __str__(self):
+        return f"Order of customer {self.customer_user.user.username} from freelancer {self.business_user.user.username}"
+    
+    unique_together = ('customer_user','offer_detail')

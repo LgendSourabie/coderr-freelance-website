@@ -10,9 +10,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
 from coderr_basic_infos_app.api.permissions import IsCustomerAndAuthenticated
-
-
-
+from coderr_order_offer_app.api.utils import get_model_or_exception
+from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 class BaseInfoList(generics.ListAPIView):
     queryset = Offer.objects.all()
 
@@ -43,12 +43,45 @@ class ReviewsList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         if serializer.is_valid():
-            serializer.save(reviewer = self.request.user.profile)
+            business_user_profile = serializer.validated_data.get('business_user')
+            business_user = get_model_or_exception(Profile, business_user_profile.id, "Geschäftsnutzer nicht gefunden.")
+            serializer.save(reviewer = self.request.user.profile, business_user = business_user)
 
 
-class ReviewsDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Rating.objects.all()
-    permission_classes = IsCustomerAndAuthenticated
-    serializer_class = RatingSerializer
+class ReviewsDetail(APIView):
+
+    def check_object_permission(self, request, rating):
+        if not IsCustomerAndAuthenticated().has_object_permission(request, self, rating):
+            raise PermissionDenied("Du hast keine Berechtigung, um diese Operation zu tun.")
+    
+    def get(self, request, pk):
+        rating = get_model_or_exception(Rating, pk, 'Bewertung nicht gefunden')
+        self.check_object_permission(request, rating)
+        serializer = RatingSerializer(rating,context={'request': request})
+        return Response(serializer.data)
+    
+    def patch(self, request, pk):
+        rating = get_model_or_exception(Rating, pk, 'Bewertung nicht gefunden')
+        self.check_object_permission(request, rating)
+
+        serializer = RatingSerializer(rating, data=request.data, partial=True,context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    def delete(self, request, pk):
+        rating = get_model_or_exception(Rating, pk, 'Bewertung nicht gefunden')
+        self.check_object_permission(request, rating)
+        rating.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 
+# class ReviewsDetail(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Rating.objects.all()
+#     permission_classes = [IsCustomerAndAuthenticated]
+#     serializer_class = RatingSerializer
+
+    
