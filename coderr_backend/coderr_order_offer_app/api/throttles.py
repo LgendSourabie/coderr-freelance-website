@@ -1,6 +1,6 @@
 from rest_framework.throttling import UserRateThrottle
 
 
-class twentyCallsPerSecond(UserRateThrottle):
+class HundredCallsPerSecond(UserRateThrottle):
 
-    scope = 'twenty'
+    scope = 'hundred'

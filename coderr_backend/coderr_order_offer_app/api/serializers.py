@@ -38,25 +38,25 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 
         # Validation for details
         if not isinstance(features, list):
-            return serializers.ValidationError("Bitte eine Liste von Features angeben")
+            raise serializers.ValidationError("Bitte eine Liste von Features angeben")
         if not all(isinstance(item, str) for item in features):
-            return serializers.ValidationError("Die einzelnen Features müssen String sein")
+            raise serializers.ValidationError("Die einzelnen Features müssen String sein")
         if not features:
-            return serializers.ValidationError("Es muss mindestens ein Feature vorhanden sein")
+            raise serializers.ValidationError("Es muss mindestens ein Feature vorhanden sein")
         
         # Validation for offer_type
         
         if offer_type not in VALID_OFFER_TYPES:
-            return serializers.ValidationError("Ungültiger Typ von Angebot")
+            raise serializers.ValidationError("Ungültiger Typ von Angebot")
         
         return attrs
 
 
 class OfferSerializer(serializers.ModelSerializer):
-    # user = serializers.PrimaryKeyRelatedField(
-    #     queryset = User.objects.all()
-    # )
+  
+    user = serializers.PrimaryKeyRelatedField(read_only = True)
     user_details = UserDetailSerializer(source='user',read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
     details =  serializers.ListField(child=serializers.DictField(), write_only = True, required = True)
     min_price = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, read_only=True)
     min_delivery_time = serializers.IntegerField(required=False, read_only=True)
@@ -64,7 +64,7 @@ class OfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
         fields = ['id','user', 'title', 'image', 'description','created_at','updated_at','details', "min_price",'min_delivery_time','user_details']
-        read_only_fields = ['created_at','updated_at']
+        read_only_fields = ["min_price",'min_delivery_time','created_at','updated_at','user_details']
 
     def to_representation(self, instance):
         """Handle the read operation for detail since previously defined as write field."""
@@ -79,34 +79,54 @@ class OfferSerializer(serializers.ModelSerializer):
 
         # Check if single offer query to customize output
         if request:
-            if str(instance.id) in request.path:
+            print('REQUEST PATH', request.path)
+            if str(instance.pk) in request.path:
                 data['details'] = OfferDetailSerializer(instance.details.all(), many=True).data
         
         return data
 
 
+
     def validate(self, attrs):
         details = attrs.get('details','')
+        image = attrs.get('image','')
         offer_details = [detail.get('offer_type') for detail in details]
-    
+
+        # Validate the image size and format
+        max_file_size = 2 * 1024 * 1024
+
+        # Verify if the file suze is not too large
+        if image and image.size > max_file_size:
+            raise serializers.ValidationError({"error":"Die Dateigröße übersteigt 2MB."})
+        # Verify if the data format is allowed
+        if image and not image.name.endswith(('.png', '.jpg', '.jpeg')):
+            raise serializers.ValidationError({"error":"Ungültige Datei-Format"})
+        
+                
+        if 'image' in attrs:
+            image = attrs.pop('image', None)
+
+        if self.instance and image:
+            self.instance.image = image
+            self.instance.save()
 
         #Validate offer details
         if len(details) != 3:
-            return serializers.ValidationError("Angebot muss genau drei Pakete enthalten")
+            raise serializers.ValidationError("Angebot muss genau drei Pakete enthalten")
         
         if set(offer_details) != SET_OFFER_TYPE:
-            return serializers.ValidationError("Ungültige eingabe")  
+            raise serializers.ValidationError({"error":"Ungültige oder fehlende Felder."})  
         return attrs
+    
+
     
     def create(self, validated_data):
 
-        print(type(validated_data))
-        offer_details_data = validated_data.pop('details', [])
-        min_price = get_min_price(offer_details_data)
-        min_delivery_time = get_min_delivery_time(offer_details_data)
 
-        validated_data['min_price'] = min_price
-        validated_data['min_delivery_time'] = min_delivery_time
+        offer_details_data = validated_data.pop('details', [])
+
+        validated_data['min_price'] = get_min_price(offer_details_data, method='post')
+        validated_data['min_delivery_time'] = get_min_delivery_time(offer_details_data,method='post')
 
         # create offer
         offer = Offer.objects.create(**validated_data)
@@ -123,14 +143,13 @@ class OfferSerializer(serializers.ModelSerializer):
         return offer
 
     def update(self, instance, validated_data):
-        offer_details_data = validated_data.pop('details', None)
 
-        instance = super().update(instance, validated_data)
-
+        offer_details_data = validated_data.pop('details', [])
         offer_instances = []
-        request = self.context.get('request')
 
 
+
+        # Update of details
         if offer_details_data is not None:
             for details_data in offer_details_data:
                 offer_detail__id = details_data.get('id')
@@ -151,6 +170,13 @@ class OfferSerializer(serializers.ModelSerializer):
 
         instance.refresh_from_db()
 
+        #Update title, description, min price and delivery time
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.min_price = get_min_price(offer_instances)
+        instance.min_delivery_time = get_min_delivery_time(offer_instances)
+
+        instance.save()
         return instance  
 
 class OrderSerializer(serializers.ModelSerializer):

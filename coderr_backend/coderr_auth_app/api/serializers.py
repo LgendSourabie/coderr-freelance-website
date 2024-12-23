@@ -3,9 +3,6 @@ from django.contrib.auth.models import User
 from coderr_user_profile_app.models import Profile
 from django.contrib.auth import authenticate
 
-
-
-
 class LoginSerializer(serializers.Serializer):
     """ 
     Login serializer for secure form data sent. 
@@ -24,12 +21,12 @@ class LoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
-            raise serializers.ValidationError("Falsche Anmeldeinformationen oder ungültige Eingabe.")
+            raise serializers.ValidationError({"detail":"Falsche Anmeldeinformationen oder ungültige Eingabe."})
 
         user = authenticate(username=username, password=password)
 
         if user is None or not user.is_active:
-            raise serializers.ValidationError("Falsche Anmeldeinformationen oder ungültige Eingabe.")
+            raise serializers.ValidationError({"detail":"Falsche Anmeldeinformationen oder ungültige Eingabe."})
         
         attrs['user'] = user
 
@@ -63,10 +60,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
         email_exist = User.objects.filter(email=entered_email).exists()
         username_exist = User.objects.filter(username=entered_username).exists()
 
-        errors_list = []
-
         if len(entered_email)==0:
-            raise serializers.ValidationError({"detail":"Falsche Anmeldedaten."})
+            raise serializers.ValidationError({"detail":"Falsche Anmeldeinformationen oder ungültige Eingabe."})
        
         if email_exist:
             raise serializers.ValidationError({"email":"Diese E-Mail-Adresse wird bereits verwendet."})

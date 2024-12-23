@@ -1,6 +1,10 @@
 
 
 def calculate_average_rating(rating_list):
+    """
+    Calculate the average of all ratings of customer for 
+    a specific business user
+    """
     sum_review = 0
 
     for el in rating_list:

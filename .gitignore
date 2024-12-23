@@ -2,3 +2,11 @@
 /coderr_backend/.env
 Coderr_Dokumentation_Endpoints.pdf
 /coderr_frontend/
+/Coderr_frontend_v1.0.0/
+/Coderr_frontend_v1.1.0/
+/coderr_backend/media
+/archiv
+/coderr_backend/coderr_auth_app/migrations
+/coderr_backend/coderr_basic_infos_app/migrations
+/coderr_backend/coderr_order_offer_app/migrations
+/coderr_backend/coderr_user_profile_app/migrations

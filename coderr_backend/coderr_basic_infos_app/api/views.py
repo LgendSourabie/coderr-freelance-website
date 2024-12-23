@@ -8,11 +8,12 @@ from coderr_basic_infos_app.api.utils import calculate_average_rating
 from coderr_basic_infos_app.api.filters import RatingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from rest_framework.permissions import IsAuthenticated
-from coderr_basic_infos_app.api.permissions import IsCustomerAndAuthenticated
+from coderr_basic_infos_app.api.permissions import IsCustomerAndAuthenticated, IsCustomerReviewer
 from coderr_order_offer_app.api.utils import get_model_or_exception
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+
+
 class BaseInfoList(generics.ListAPIView):
     queryset = Offer.objects.all()
 
@@ -29,13 +30,12 @@ class BaseInfoList(generics.ListAPIView):
                 "offer_count": len(Offer.objects.all()),
               }
         return Response(data, status=status.HTTP_200_OK)
-    
 
 
 class ReviewsList(generics.ListCreateAPIView):
     queryset = Rating.objects.all()
     serializer_class = RatingSerializer
-    permission_classes = [IsCustomerAndAuthenticated]
+    permission_classes = [IsCustomerReviewer]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = RatingFilter
     ordering_fields = ['updated_at','rating']
@@ -77,11 +77,3 @@ class ReviewsDetail(APIView):
         self.check_object_permission(request, rating)
         rating.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-
-# class ReviewsDetail(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Rating.objects.all()
-#     permission_classes = [IsCustomerAndAuthenticated]
-#     serializer_class = RatingSerializer
-
-    

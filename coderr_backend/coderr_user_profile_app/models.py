@@ -1,21 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-# Create your models here.
-
 
 class Profile(models.Model):
     """ 
-    Profile is a standard profile which correspond to a customer profile.
-        - file: profile picture of a customer or a businessman if inherited by BusinessProfile class.
-        - uploaded_at : date the picture has been uploaded
-        - type: type of profile - is either customer or business
+    Profile is a which corresponds to a customer or business profile type.
+    The Profile will be generated when the user registers or signs up. 
     """
     PROFILE_TYPE_OPTIONS = (('business','business'),('customer','customer'))
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    file = models.ImageField(upload_to='uploads/profiles/',blank=True, null=True)
+    uploaded_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    # file = models.FileField(upload_to='/', blank=True, null=True)
-    # uploaded_at = models.DateTimeField(blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null= True)
     tel = models.CharField(max_length=50, blank=True, null= True)
     description = models.TextField(max_length=300, blank=True, null= True)
@@ -23,5 +19,5 @@ class Profile(models.Model):
     type = models.CharField(max_length=50, choices=PROFILE_TYPE_OPTIONS, default='customer')
 
     def __str__(self):
-        return f"{self.user.username} has a {self.type} profile"
-
+        return f"{self.user.username}'s {self.type} profile"
+    

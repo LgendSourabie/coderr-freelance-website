@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'coderr_order_offer_app',
     'coderr_basic_infos_app',
-    'coderr_file_upload_app',
     'coderr_user_profile_app',
     'coderr_auth_app',
 ]
@@ -144,9 +143,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        # 'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ],
+
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
@@ -162,8 +159,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
 ],
     'DEFAULT_THROTTLE_RATES':{
-        'anon':'10/minute',
-        'user':'200/minute',
-        'twenty':'200/second',
+        'anon':'50/minute',
+        'user':'120/minute',
+        'hundred':'100/second',
     },
 }

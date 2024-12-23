@@ -1,7 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
 from coderr_user_profile_app.models import Profile
-# Create your models here.
 
 class Rating(models.Model):
 
@@ -13,8 +11,7 @@ class Rating(models.Model):
     updated_at =  models.DateTimeField(auto_now=True)
 
     def __str__(self):
-
-        return f"{self.reviewer.user.username} {self.rating}"
+        return f"{self.reviewer.user.username} rates {self.business_user.user.username} with {self.rating}"
     
     class Meta:
         unique_together = ('reviewer','business_user')
