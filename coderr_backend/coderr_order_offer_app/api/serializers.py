@@ -47,7 +47,7 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         # Validation for offer_type
         
         if offer_type not in VALID_OFFER_TYPES:
-            raise serializers.ValidationError("Ungültiger Typ von Angebot")
+            raise serializers.ValidationError("Ungültiger Angebotstyp")
         
         return attrs
 
@@ -58,7 +58,7 @@ class OfferSerializer(serializers.ModelSerializer):
     user_details = UserDetailSerializer(source='user',read_only=True)
     image = serializers.ImageField(required=False, allow_null=True)
     details =  serializers.ListField(child=serializers.DictField(), write_only = True, required = True)
-    min_price = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, read_only=True)
+    min_price = serializers.DecimalField(max_digits=15, decimal_places=2, required=False, read_only=True)
     min_delivery_time = serializers.IntegerField(required=False, read_only=True)
 
     class Meta:

@@ -18,10 +18,10 @@ class OfferDetail(models.Model):
         offer_type: type of the offer
     """
 
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=200)
     revisions = models.SmallIntegerField(default=-1)
     delivery_time_in_days = models.SmallIntegerField()
-    price = models.DecimalField(max_digits=10,decimal_places=2)
+    price = models.DecimalField(max_digits=15,decimal_places=2)
     features = models.JSONField()
     offer_type = models.CharField(max_length=8,choices=OFFER_TYPE_OPTIONS,default='basic', blank=True, null=True)
 
@@ -43,13 +43,13 @@ class Offer(models.Model):
     """
     
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='offer') 
-    title = models.CharField(max_length=50)
+    title = models.CharField(max_length=200)
     image = models.ImageField(upload_to='uploads/images/',blank=True, null=True)
     description = models.TextField(max_length=200)
     created_at= models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True) 
     details = models.ManyToManyField(OfferDetail, related_name='offer')
-    min_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    min_price = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
     min_delivery_time = models.SmallIntegerField(blank=True, null=True)
 
     def __str__(self):
