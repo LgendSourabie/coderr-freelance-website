@@ -63,7 +63,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'coderr_project.urls'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    'https://coderr.ibrahima-sourabie.com',
+]
+
+CORS_ALLOW_ALL_ORIGINS = False
 
 
 CORS_ALLOW_HEADERS = [

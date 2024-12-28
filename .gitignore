@@ -8,5 +8,7 @@ Coderr_Dokumentation_Endpoints.pdf
 /archiv
 /coderr_backend/coderr_auth_app/migrations
 /coderr_backend/coderr_basic_infos_app/migrations
+/coderr_backend/coderr_basic_infos_app/tests
 /coderr_backend/coderr_order_offer_app/migrations
+/coderr_backend/coderr_order_offer_app/tests
 /coderr_backend/coderr_user_profile_app/migrations
