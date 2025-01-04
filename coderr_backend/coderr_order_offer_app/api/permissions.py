@@ -25,8 +25,8 @@ class IsBusinessAndOwner(permissions.BasePermission):
             is_business = bool(request.user.profile.type == 'business')
             return  is_business
         elif request.method in ['DELETE','PATCH'] and is_authenticated:
-            is_owner_or_admin = bool( obj.user == request.user.profile or request.user.is_superuser)
-            return is_owner_or_admin
+            is_owner = bool( obj.user == request.user.profile)
+            return bool(request.user.is_superuser or is_owner)
         
 
 class IsAuthorized(permissions.BasePermission):

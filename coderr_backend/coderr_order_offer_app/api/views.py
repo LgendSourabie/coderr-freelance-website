@@ -61,9 +61,19 @@ class SingleOffer(generics.RetrieveUpdateDestroyAPIView):
         serializer = OfferSerializer(offer, data = request.data, partial=True, context={'request': request})
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            if (offer.user == request.user.profile) or request.user.is_superuser:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response({"detail":"Du hast keine Berechtigung für diese Operation."},status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request,pk):
+        offer = get_model_or_exception(Offer,pk, "Kein Angebot gefunden.")
+
+        if offer.user != request.user.profile or not request.user.is_superuser:
+            return Response({"detail":"Du hast keine Berechtigung für diese Operation."}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().delete(request, pk)
 
 
 class SingleOfferDetail(generics.RetrieveAPIView):

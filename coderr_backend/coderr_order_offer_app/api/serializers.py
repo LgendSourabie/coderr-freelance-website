@@ -27,27 +27,33 @@ class OfferDetailSerializer(serializers.ModelSerializer):
     class   Meta:
         model = OfferDetail
         fields =  ['id','title','revisions', 'delivery_time_in_days', 'price','features','offer_type' ]
-        extra_kwargs = {
-            "revisions":{"min_value":-1},
-            "delivery_time_in_days":{"min_value":1},
-        }
 
     def validate(self, attrs):
         features = attrs.get('features','')
         offer_type = attrs.get('offer_type','')
+        delivery_time_in_days = attrs.get('delivery_time_in_days','')
+        revisions = attrs.get('revisions','')
 
         # Validation for details
         if not isinstance(features, list):
-            raise serializers.ValidationError("Bitte eine Liste von Features angeben")
+            raise serializers.ValidationError({"detail":"Bitte eine Liste von Features angeben"})
         if not all(isinstance(item, str) for item in features):
-            raise serializers.ValidationError("Die einzelnen Features müssen String sein")
+            raise serializers.ValidationError({"detail":"Die einzelnen Features müssen String sein"})
         if not features:
-            raise serializers.ValidationError("Es muss mindestens ein Feature vorhanden sein")
+            raise serializers.ValidationError({"detail":"Es muss mindestens ein Feature vorhanden sein"})
+        
+        # Validate Delivery time
+        if delivery_time_in_days <=0:
+            raise serializers.ValidationError({"detail":"Lieferzeit kann nicht negativ sein."})
+        
+        # Validate revision
+        if revisions <-1:
+            raise serializers.ValidationError({"detail":"Revision muss größer oder gleich -1 sein."})
         
         # Validation for offer_type
         
         if offer_type not in VALID_OFFER_TYPES:
-            raise serializers.ValidationError("Ungültiger Angebotstyp")
+            raise serializers.ValidationError({"detail":"Ungültiger Angebotstyp"})
         
         return attrs
 
@@ -111,11 +117,15 @@ class OfferSerializer(serializers.ModelSerializer):
             self.instance.save()
 
         #Validate offer details
-        if len(details) != 3:
-            raise serializers.ValidationError("Angebot muss genau drei Pakete enthalten")
+        if len(details) != 3 and self.context.get('request').method == 'POST':
+            raise serializers.ValidationError({"detail":"Angebot muss genau drei Pakete enthalten."})
         
-        if set(offer_details) != SET_OFFER_TYPE:
-            raise serializers.ValidationError({"error":"Ungültige oder fehlende Felder."})  
+        is_offer_type_and_create = set(offer_details) != SET_OFFER_TYPE and self.context.get('request').method == 'POST'
+        is_offer_type_and_update = not set(offer_details).issubset(SET_OFFER_TYPE) and self.context.get('request').method == 'PATCH'
+        
+        if is_offer_type_and_create or is_offer_type_and_update:
+            raise serializers.ValidationError({"detail":"Nur 'basic, standard oder premium' sind als Angebotstyp akzeptiert"})
+
         return attrs
     
 
@@ -145,26 +155,23 @@ class OfferSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
 
         offer_details_data = validated_data.pop('details', [])
-        offer_instances = []
-
-
+        offer_instances = list(instance.details.all())
 
         # Update of details
-        if offer_details_data is not None:
+        if offer_details_data is not None and len(offer_details_data) <=3:
             for details_data in offer_details_data:
-                offer_detail__id = details_data.get('id')
-                if offer_detail__id:
-                    offer_detail_instance = OfferDetail.objects.get(id=offer_detail__id)
-                    offer_detail_instance.title = details_data.get('title', offer_detail_instance.title)
-                    offer_detail_instance.revisions = details_data.get('revisions', offer_detail_instance.revisions)
-                    offer_detail_instance.delivery_time_in_days = details_data.get('delivery_time_in_days', offer_detail_instance.delivery_time_in_days)
-                    offer_detail_instance.price = details_data.get('price', offer_detail_instance.price)
-                    offer_detail_instance.features = details_data.get('features', offer_detail_instance.features)
-                    offer_detail_instance.offer_type = details_data.get('offer_type', offer_detail_instance.offer_type)
-                    offer_detail_instance.save()
+                offer_detail_id = details_data.get('id')
+                if offer_detail_id:
+                    try:
+                        offer_detail_instance = next(detail for detail in offer_instances if detail.id == offer_detail_id )
+                        serializer = OfferDetailSerializer(
+                        offer_detail_instance, data=details_data, partial=True)
+                        serializer.is_valid(raise_exception=True)
+                        serializer.save()
+                    except StopIteration:
+                        raise serializers.ValidationError({"detail": f"Angebot mit Angebot-Detail ID {offer_detail_id} nicht gefunden."})
                 else:
-                    offer_detail_instance = OfferDetail.objects.create(**details_data)
-                offer_instances.append(offer_detail_instance)
+                    raise serializers.ValidationError({"detail":"Angebot muss genau drei Pakete enthalten. Geben Sie ein ID zur Aktualisierung von Angeboten."})
 
             instance.details.set(offer_instances)
 

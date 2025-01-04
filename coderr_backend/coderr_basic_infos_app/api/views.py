@@ -65,15 +65,20 @@ class ReviewsDetail(APIView):
         self.check_object_permission(request, rating)
 
         serializer = RatingSerializer(rating, data=request.data, partial=True,context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+        if request.user.profile == rating.reviewer or request.user.is_superuser:
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"detail":"Du hast keine Berechtigung für diese Aktion."}, status=status.HTTP_401_UNAUTHORIZED)
 
     def delete(self, request, pk):
         rating = get_model_or_exception(Rating, pk, 'Bewertung nicht gefunden')
         self.check_object_permission(request, rating)
-        rating.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.user.profile == rating.reviewer or request.user.is_superuser:
+            rating.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"detail":"Du hast keine Berechtigung für diese Aktion."}, status=status.HTTP_401_UNAUTHORIZED)

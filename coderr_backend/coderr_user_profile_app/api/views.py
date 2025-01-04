@@ -56,8 +56,11 @@ class ProfileDetail(generics.RetrieveUpdateAPIView):
         profile = get_model_or_exception(Profile,pk, "Kein Profil gefunden.")
         serializer = ProfileSerializer(profile, data = request.data, partial=True, context={'request': request})
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if request.user == profile.user or request.user.is_superuser:
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"detail":"Du hast keine Berechtigung für diese Aktion."}, status=status.HTTP_401_UNAUTHORIZED)
     

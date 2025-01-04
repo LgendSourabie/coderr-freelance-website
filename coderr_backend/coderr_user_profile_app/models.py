@@ -12,10 +12,10 @@ class Profile(models.Model):
     file = models.ImageField(upload_to='uploads/profiles/',blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    location = models.CharField(max_length=100, blank=True, null= True)
-    tel = models.CharField(max_length=50, blank=True, null= True)
-    description = models.TextField(max_length=300, blank=True, null= True)
-    working_hours = models.CharField(max_length=10, blank=True, null= True)
+    location = models.CharField(max_length=100, blank=True, default="")
+    tel = models.CharField(max_length=50, blank=True, default="")
+    description = models.TextField(max_length=300, blank=True, default="")
+    working_hours = models.CharField(max_length=10, blank=True, default="")
     type = models.CharField(max_length=50, choices=PROFILE_TYPE_OPTIONS, default='customer')
 
     def __str__(self):
