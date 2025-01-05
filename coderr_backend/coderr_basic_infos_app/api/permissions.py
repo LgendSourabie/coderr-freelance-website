@@ -8,12 +8,12 @@ class IsCustomerReviewer(permissions.BasePermission):
         is_authenticated = bool(request.user and  request.user.is_authenticated)
         if request.method =="GET":
             return True
-        elif request.method == 'POST':
+        elif is_authenticated and request.method == 'POST':
             is_customer = bool(request.user.profile.type == 'customer')
-            return bool(is_authenticated and is_customer)
-        elif request.method =='DELETE':
+            return is_customer
+        elif is_authenticated and request.method =='DELETE':
             is_owner_or_admin = bool(request.user.is_superuser)
-            return bool( is_authenticated and is_owner_or_admin)
+            return is_owner_or_admin
 
 
 class IsCustomerAndAuthenticated(permissions.BasePermission):
@@ -23,9 +23,9 @@ class IsCustomerAndAuthenticated(permissions.BasePermission):
         is_authenticated = bool(request.user and  request.user.is_authenticated)
         if request.method =="GET":
             return True
-        elif request.method == 'POST':
+        elif is_authenticated and request.method == 'POST':
             is_customer = bool(obj.reviewer.type == 'customer')
-            return bool(is_authenticated and is_customer)
-        elif request.method in ['PUT','DELETE','PATCH']:
+            return is_customer
+        elif is_authenticated and request.method in ['PUT','DELETE','PATCH']:
             is_owner_or_admin = bool( obj.reviewer == request.user.profile or request.user.is_superuser)
-            return bool( is_authenticated and is_owner_or_admin)
+            return is_owner_or_admin

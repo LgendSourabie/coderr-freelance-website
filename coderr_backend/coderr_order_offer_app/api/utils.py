@@ -37,7 +37,7 @@ def is_order_for_business_user(order, user):
     return order.offer_detail.offer.first().user.id == user.pk
 
 
-def get_model_or_exception(model, pk:int,error_message:str):
+def get_model_or_exception(model, pk,error_message):
     """ Found object by ID , return the object if found otherwise raise an error """
 
     try:

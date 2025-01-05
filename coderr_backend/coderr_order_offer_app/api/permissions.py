@@ -54,11 +54,9 @@ class IsBusinessUser(permissions.BasePermission):
         is_authenticated = bool(request.user and  request.user.is_authenticated)
         if request.method  in permissions.SAFE_METHODS:
             return True
-        elif request.method == 'POST':
+        elif is_authenticated and request.method == 'POST':
             is_customer = bool(request.user.profile.type == 'customer')
-            return bool(is_authenticated and is_customer) 
-        elif request.method == 'DELETE':
-            return bool( is_authenticated )
+            return is_customer
         elif is_authenticated and request.method in ['DELETE','PATCH']:
             is_admin = bool(request.user.is_superuser)
             is_owner = bool(obj.offer_detail.offer.first().user == request.user.profile)

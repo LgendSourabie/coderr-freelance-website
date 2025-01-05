@@ -49,16 +49,19 @@ class ReviewsList(generics.ListCreateAPIView):
 
 
 class ReviewsDetail(APIView):
+    queryset = Rating.objects.all()
+    serializer_class = RatingSerializer
+    permission_classes = [IsCustomerAndAuthenticated]
 
     def check_object_permission(self, request, rating):
         if not IsCustomerAndAuthenticated().has_object_permission(request, self, rating):
-            raise PermissionDenied("Du hast keine Berechtigung, um diese Operation zu tun.")
+            raise PermissionDenied("Du hast keine Berechtigung für diese Aktion.")
     
     def get(self, request, pk):
         rating = get_model_or_exception(Rating, pk, 'Bewertung nicht gefunden')
         self.check_object_permission(request, rating)
         serializer = RatingSerializer(rating,context={'request': request})
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def patch(self, request, pk):
         rating = get_model_or_exception(Rating, pk, 'Bewertung nicht gefunden')
