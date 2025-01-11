@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from setting_config.setting_conf import SQL_PWD, SQL_USER, DB_HOST, DB_NAME, SECRET_KEY
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,7 +24,7 @@ MEDIA_URL = '/media/'
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9327327#4uavs$m239ov4#97n6ly0$txtds0l!$tat4291wk=i'
+SECRET_KEY = SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -100,7 +101,7 @@ WSGI_APPLICATION = 'coderr_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'coderr_db',
+        'NAME': DB_NAME,
         'USER':'postgres',
         'HOST':'127.0.0.1',
         'PORT':'5432',
