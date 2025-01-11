@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from setting_config.setting_conf import SQL_PWD, SQL_USER, DB_HOST, DB_NAME, SECRET_KEY
+from config_setting.setting_conf import SQL_PWD, SQL_USER, DB_HOST, DB_NAME, SECRET_KEY
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

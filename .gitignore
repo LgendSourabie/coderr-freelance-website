@@ -1,8 +1,8 @@
 db.sqlite3
 env/
-config_setting/
 __pycache__/
 .vscode/
+config_setting/
 Coderr_Dokumentation_Endpoints.pdf
 coderr_frontend/
 archiv/
